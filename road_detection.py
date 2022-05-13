@@ -29,6 +29,16 @@ def draw_the_lines(img, lines):
     img_weight = cv2.addWeighted(img, 0.8, blank_image, 1, 0.0)
     return img_weight
 
+def auto_canny(image, sigma=0.33):
+	# compute the median of the single channel pixel intensities
+	v = np.median(image)
+	# apply automatic Canny edge detection using the computed median
+	lower = int(max(0, (1.0 - sigma) * v))
+	upper = int(min(255, (1.0 + sigma) * v))
+	edged = cv2.Canny(image, lower, upper)
+	# return the edged image
+	return edged
+
 # Read road image
 image = cv2.imread('./data/road.jpg')
 # Convert image to RGB for Windows viewing
@@ -48,10 +58,12 @@ region_of_interest_vertices = [
 
 # Convert road image to grayscale
 gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-# Canny edge detect on the grayscale road image
-canny_image = cv2.Canny(gray_image, 100, 120)
+# GaussianBlur the image
+blurred = cv2.GaussianBlur(gray_image, (3, 3), 0)
+# Canny edge detect on the blurred road image
+canny_image = auto_canny(blurred)
 # Crop image base on region of interest
-cropped_image = region_of_interest(canny_image, np.array([region_of_interest_vertices], np.int32), )
+cropped_image = region_of_interest(canny_image, np.array([region_of_interest_vertices], np.int32))
 # Find each line using HoughLinesP function
 lines = cv2.HoughLinesP(cropped_image,
                         rho=2,

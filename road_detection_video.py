@@ -16,6 +16,15 @@ def region_of_interest(img, vertices):
     # Return the masked image
     return masked_image
 
+def auto_canny(image, sigma=0.33):
+	# compute the median of the single channel pixel intensities
+	v = np.median(image)
+	# apply automatic Canny edge detection using the computed median
+	lower = int(max(0, (1.0 - sigma) * v))
+	upper = int(min(255, (1.0 + sigma) * v))
+	edged = cv2.Canny(image, lower, upper)
+	# return the edged image
+	return edged
 
 # Draw lines on image
 def draw_the_lines(img, lines):
@@ -43,8 +52,10 @@ def processing(image):
 
     # Convert road image to grayscale
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # GaussianBlur the image
+    blurred = cv2.GaussianBlur(gray_image, (3, 3), 0)
     # Canny edge detect on the grayscale road image
-    canny_image = cv2.Canny(gray_image, 100, 120)
+    canny_image = auto_canny(blurred)
     # Crop image base on region of interest
     cropped_image = region_of_interest(canny_image, vertices)
     # Find each line using HoughLinesP function
@@ -91,7 +102,7 @@ def processingFile():
         try:
             # Get one frame from buffer
             frame = input_buffer.get(timeout=1)
-            # Perform road lane detection
+           # Perform road lane detection
             frame = processing(frame)
             # Show the video frame
             cv2.imshow(window_name, frame)
@@ -117,7 +128,6 @@ def processingFile():
     print("Actual FPS = %0.3f" % (frame_number / (end_time - start_time)))
     print("Total wait time %0.3f" % total_wait_time)
     print("Average wait time %0.3f" % (total_wait_time / frame_number))
-
 
 # Open video file using ConcurrentVideoCapture helper
 cap = cv2.VideoCapture('./data/lane1.mp4')
